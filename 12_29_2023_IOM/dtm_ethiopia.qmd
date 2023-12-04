@@ -1,0 +1,98 @@
+---
+title: "IOM DTM Ethiopia Assessment"
+format: html
+---
+
+## Load libraries and datasets
+
+```{r}
+#| label: setup
+#| include: false
+
+library(tidyverse) # data manipulation
+library(ggtext)
+site_assessment <- openxlsx::read.xlsx(here::here("iom_ethiopia/site_assess_round_33_nov_2022_jun_2023.xlsx"), detectDates = TRUE)
+
+```
+
+**Look at the names the data frame**
+
+```{r}
+names(site_assessment)[1:5]
+```
+
+**Clean column names as the `R` naming conventions**
+
+```{r}
+
+site_assessment_clean <-  site_assessment %>% 
+  purrr::set_names(c("survey_date", "country", "country_code", "reported_date", "survey_round", 
+  "site_id", "site_name","site_alternate_name", "site_open", "region", 
+  "admin_1_code",  "zone", "admin_2_code", "woreda", "kebele", 
+  "ocha_region", "ocha_region_p_code", "ocha_zone", 
+  "ocha_zone_p_code", "ocha_woreda", "ocha_woreda_p_code", 
+  "gps_longitude", "gps_latitude", "site_open_date", 
+  "site_started", "site_classification", "settlement_site_type", 
+  "settlement_site_type_other", "collective_center", 
+  "collective_other_specify", "total_idp_families_h_hs",
+  "total_idp_individuals", "reason_for_displacement", 
+  "reason_for_displacementother_specify", 
+  "reason_for_displacement_conflict", "reason_for_displacement_drought",
+  "reason_for_displacement_climate_induced", "reason_for_displacement_social_tension",
+  "reason_for_displacement_individuals_other", "individuals_arrive_1_year_ago", 
+  "individuals_arrive_1_2_years_ago", "individuals_arrive_3_4_years_ago", 
+  "individuals_arrive_5_more_years_ago", "methodology_used", "male_0_4_years", 
+  "male_5_14_years", "male_15_17_years", "male_18_59_years", "male_60_years_and_above", 
+  "female_0_4_years", "female_5_14_years", "female_15_17_years", "female_18_59_years",
+  "female_60_years_and_above", "comments_observations"))
+
+site_assessment_clean <- site_assessment_clean %>% 
+  mutate(region_color = case_when(
+    region == "Amhara" ~ "#FA2E02",
+    region == "Oromia" ~ "#F19724",
+    region == "Somali" ~ "#7D6608",
+    region == "SNNP" ~ "#9A7D0A",
+    region == "Beneshangul Gumuz" ~ "#B7950B",
+    region == "Sidama" ~ "#D4AC0D",
+    region == "Afar" ~ "#F1C40F",
+    region == "South West Ethiopia Peoples" ~ "#F4D03F",
+    region == "Gambella" ~ "#F7DC6F",
+    region == "Hareri" ~ "#F9E79F"
+  ))
+
+```
+
+```{r}
+# set the color 
+region_color <- data.frame(
+  region = c("Amhara", "Oromia", "Somali", "SNNP", "Beneshangul Gumuz", "Sidama", "Afar", "South West Ethiopia Peoples", "Gambella", "Hareri"),
+  clr = c("#FA2E02", "#9A7D0A", "#9A7D0A", "#B7950B", "#D4AC0D", "#F1C40F", "#F4D03F", "#F7DC6F", "#F9E79F", "#FCF3CF")
+)
+
+site_assessment_clean %>% 
+  select(region, contains(c("male", "female", "total", "reason","individual"))) %>% 
+  group_by(reason_for_displacement, region) %>% 
+  summarise(total_idps = n()) %>% 
+  filter(!is.na(reason_for_displacement), reason_for_displacement == "Conflict") %>% 
+  left_join(region_color, by = "region") %>% 
+  mutate(region = fct_reorder(region, total_idps)) %>% 
+  ggplot(aes(x = region, y = total_idps, fill = clr)) +
+  geom_col() +
+ # theme_minimal() +
+  scale_fill_identity() +
+  coord_flip() +
+  labs(title = "Number of IDPs sites opened due to <span style = 'font-size:8pt'>conflict</span> by Region",
+       y = "# of IDP", 
+       x = "") +
+  theme(legend.position = 'none',
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
+        axis.title.x = element_text(face = "bold"))
+  
+
+```
+
+```{r}
+
+
+```
+

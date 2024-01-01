@@ -26,7 +26,7 @@ names(site_assessment)
 **Clean column names as the `R` naming conventions**
 
 ```{r}
-site_assessment_clean <- site_assessment %>%
+site_assessment_clean <- site_assessment |>
   purrr::set_names(c(
     "survey_date", "country", "country_code", "reported_date", "survey_round",
     "site_id", "site_name", "site_alternate_name", "site_open", "region",
@@ -49,7 +49,7 @@ site_assessment_clean <- site_assessment %>%
     "female_60_years_and_above", "comments_observations"
   ))
 
-site_assessment_clean <- site_assessment_clean %>%
+site_assessment_clean <- site_assessment_clean |>
   mutate(region_name = case_when(
     region == "Amhara" ~ "Amhara",
     region == "Oromia" ~ "Oromia",
@@ -61,7 +61,7 @@ site_assessment_clean <- site_assessment_clean %>%
     region == "South West Ethiopia Peoples" ~ "SWEP",
     region == "Gambella" ~ "Gambella",
     region == "Hareri" ~ "Hareri"
-  )) %>% # rename the region names
+  )) |> # rename the region names
   mutate(region_color = case_when(
     region_name == "Amhara" ~ "#F90909",
     region_name == "Oromia" ~ "#F19724",
@@ -84,18 +84,18 @@ region_color <- data.frame(
 )
 
 # see the conflicts by region
-disp_conflict <- site_assessment_clean %>%
-  select(region_name, contains(c("male", "female", "total", "reason", "individual"))) %>%
-  group_by(reason_for_displacement, region_name) %>%
-  summarise(total_idps = n()) %>%
-  ungroup() %>%
-  filter(!is.na(reason_for_displacement), reason_for_displacement == "Conflict") %>%
-  select(-reason_for_displacement) %>%
-  left_join(region_color, by = "region_name") %>%
+disp_conflict <- site_assessment_clean |>
+  select(region_name, contains(c("male", "female", "total", "reason", "individual"))) |>
+  group_by(reason_for_displacement, region_name) |>
+  summarise(total_idps = n()) |>
+  ungroup() |>
+  filter(!is.na(reason_for_displacement), reason_for_displacement == "Conflict") |>
+  select(-reason_for_displacement) |>
+  left_join(region_color, by = "region_name") |>
   mutate(region_name = fct_reorder(region_name, total_idps))
 
 # plot number of idps opened due to conflict
-disp_conflict %>%
+disp_conflict |>
   ggplot(aes(x = region_name, y = total_idps, fill = clr)) +
   geom_col() +
   geom_text(aes(label = total_idps), vjust = -0.5, color = "black", size = 8) + # Add text labels
@@ -117,33 +117,33 @@ disp_conflict %>%
 ```
 
 ```{r}
-all_disp <- site_assessment_clean %>%
-   mutate(site_open_date = lubridate::year(site_open_date)) %>%
-  group_by(reason_for_displacement, region_name, site_open_date) %>%
-  summarise(total_idps = n()) %>%
-  ungroup() %>%
+all_disp <- site_assessment_clean |>
+   mutate(site_open_date = lubridate::year(site_open_date)) |>
+  group_by(reason_for_displacement, region_name, site_open_date) |>
+  summarise(total_idps = n()) |>
+  ungroup() |>
   mutate(reason_for_displacement = case_when(
     reason_for_displacement == "Conflict" ~ "Conflict",
     reason_for_displacement %in% c("Drought", "Other climate induced") ~ "Climate",
     reason_for_displacement %in% "Social tension" ~ "Social Tension"
-  )) %>%
-  drop_na() %>% view()
+  )) |>
+  drop_na() 
 ```
 
 ```{r}
-site_open_year <- site_assessment_clean %>%
-  select(site_name, region_name, site_open_date) %>%
-  filter(!is.na(site_name)) %>%
-  mutate(site_open_date = lubridate::year(site_open_date)) %>%
-  group_by(region_name, site_open_date) %>%
-  summarise(total_site_open = n()) %>%
+site_open_year <- site_assessment_clean |>
+  select(site_name, region_name, site_open_date) |>
+  filter(!is.na(site_name)) |>
+  mutate(site_open_date = lubridate::year(site_open_date)) |>
+  group_by(region_name, site_open_date) |>
+  summarise(total_site_open = n()) |>
   ungroup()
 
- site_open_year %>% 
-  filter(site_open_date > 2016, !(region_name %in% c("Gambella", "Hareri", "SWEP", "Sidama"))) %>%
-  mutate(site_open_date = factor(site_open_date)) %>%
-  left_join(region_color, by = "region_name") %>%
-  mutate(region_name = fct_reorder(region_name, total_site_open)) %>%
+ site_open_year |> 
+  filter(site_open_date > 2016, !(region_name %in% c("Gambella", "Hareri", "SWEP", "Sidama"))) |>
+  mutate(site_open_date = factor(site_open_date)) |>
+  left_join(region_color, by = "region_name") |>
+  mutate(region_name = fct_reorder(region_name, total_site_open)) |>
   ggplot(aes(x = site_open_date, y = total_site_open, fill = region_name)) +
   geom_col() +
   facet_wrap(~region_name, scales = "free_x") +
@@ -151,12 +151,12 @@ site_open_year <- site_assessment_clean %>%
 ```
 
 ```{r}
-site_open_year_idps <- site_open_year %>% 
-   filter(site_open_date > 2016, !(region_name %in% c("Gambella", "Hareri", "SWEP", "Sidama"))) %>% 
-  inner_join(all_disp, by = "region_name",relationship = "many-to-many" ) %>% 
-  left_join(region_color, by = "region_name") %>% 
-  pivot_wider(names_from = site_open_date, values_from = total_site_open, names_prefix = "year_") %>% 
-  mutate(region_name = fct_reorder(region_name, total_idps)) %>% 
+site_open_year_idps <- site_open_year |> 
+   filter(site_open_date > 2016, !(region_name %in% c("Gambella", "Hareri", "SWEP", "Sidama"))) |> 
+  inner_join(all_disp, by = "region_name",relationship = "many-to-many" ) |> 
+  left_join(region_color, by = "region_name") |> 
+  pivot_wider(names_from = site_open_date, values_from = total_site_open, names_prefix = "year_") |> 
+  mutate(region_name = fct_reorder(region_name, total_idps)) |> 
   ungroup()
 
 ```
@@ -184,7 +184,7 @@ plt1 <- plt +
 ```
 
 ```{r}
-site_open_year_idps %>% 
+site_open_year_idps |> 
   ggplot(aes(x = region_name, y = total_idps)) +
   geom_col()
 ```

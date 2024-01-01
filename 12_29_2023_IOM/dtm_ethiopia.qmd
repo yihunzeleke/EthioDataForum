@@ -1,6 +1,8 @@
 ---
 title: "IOM DTM Ethiopia Assessment"
 format: html
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Load libraries and datasets
@@ -10,89 +12,180 @@ format: html
 #| include: false
 
 library(tidyverse) # data manipulation
-library(ggtext)
-site_assessment <- openxlsx::read.xlsx(here::here("iom_ethiopia/site_assess_round_33_nov_2022_jun_2023.xlsx"), detectDates = TRUE)
+library(ggtext) # text rendering on ggplot2
 
+site_assessment <- openxlsx::read.xlsx(here::here("Data/site_assess_round_33_nov_2022_jun_2023.xlsx"), detectDates = TRUE)
 ```
 
 **Look at the names the data frame**
 
 ```{r}
-names(site_assessment)[1:5]
+names(site_assessment)
 ```
 
 **Clean column names as the `R` naming conventions**
 
 ```{r}
-
-site_assessment_clean <-  site_assessment %>% 
-  purrr::set_names(c("survey_date", "country", "country_code", "reported_date", "survey_round", 
-  "site_id", "site_name","site_alternate_name", "site_open", "region", 
-  "admin_1_code",  "zone", "admin_2_code", "woreda", "kebele", 
-  "ocha_region", "ocha_region_p_code", "ocha_zone", 
-  "ocha_zone_p_code", "ocha_woreda", "ocha_woreda_p_code", 
-  "gps_longitude", "gps_latitude", "site_open_date", 
-  "site_started", "site_classification", "settlement_site_type", 
-  "settlement_site_type_other", "collective_center", 
-  "collective_other_specify", "total_idp_families_h_hs",
-  "total_idp_individuals", "reason_for_displacement", 
-  "reason_for_displacementother_specify", 
-  "reason_for_displacement_conflict", "reason_for_displacement_drought",
-  "reason_for_displacement_climate_induced", "reason_for_displacement_social_tension",
-  "reason_for_displacement_individuals_other", "individuals_arrive_1_year_ago", 
-  "individuals_arrive_1_2_years_ago", "individuals_arrive_3_4_years_ago", 
-  "individuals_arrive_5_more_years_ago", "methodology_used", "male_0_4_years", 
-  "male_5_14_years", "male_15_17_years", "male_18_59_years", "male_60_years_and_above", 
-  "female_0_4_years", "female_5_14_years", "female_15_17_years", "female_18_59_years",
-  "female_60_years_and_above", "comments_observations"))
-
-site_assessment_clean <- site_assessment_clean %>% 
-  mutate(region_color = case_when(
-    region == "Amhara" ~ "#FA2E02",
-    region == "Oromia" ~ "#F19724",
-    region == "Somali" ~ "#7D6608",
-    region == "SNNP" ~ "#9A7D0A",
-    region == "Beneshangul Gumuz" ~ "#B7950B",
-    region == "Sidama" ~ "#D4AC0D",
-    region == "Afar" ~ "#F1C40F",
-    region == "South West Ethiopia Peoples" ~ "#F4D03F",
-    region == "Gambella" ~ "#F7DC6F",
-    region == "Hareri" ~ "#F9E79F"
+site_assessment_clean <- site_assessment %>%
+  purrr::set_names(c(
+    "survey_date", "country", "country_code", "reported_date", "survey_round",
+    "site_id", "site_name", "site_alternate_name", "site_open", "region",
+    "admin_1_code", "zone", "admin_2_code", "woreda", "kebele",
+    "ocha_region", "ocha_region_p_code", "ocha_zone",
+    "ocha_zone_p_code", "ocha_woreda", "ocha_woreda_p_code",
+    "gps_longitude", "gps_latitude", "site_open_date",
+    "site_started", "site_classification", "settlement_site_type",
+    "settlement_site_type_other", "collective_center",
+    "collective_other_specify", "total_idp_families_h_hs",
+    "total_idp_individuals", "reason_for_displacement",
+    "reason_for_displacementother_specify",
+    "reason_for_displacement_conflict", "reason_for_displacement_drought",
+    "reason_for_displacement_climate_induced", "reason_for_displacement_social_tension",
+    "reason_for_displacement_individuals_other", "individuals_arrive_1_year_ago",
+    "individuals_arrive_1_2_years_ago", "individuals_arrive_3_4_years_ago",
+    "individuals_arrive_5_more_years_ago", "methodology_used", "male_0_4_years",
+    "male_5_14_years", "male_15_17_years", "male_18_59_years", "male_60_years_and_above",
+    "female_0_4_years", "female_5_14_years", "female_15_17_years", "female_18_59_years",
+    "female_60_years_and_above", "comments_observations"
   ))
 
+site_assessment_clean <- site_assessment_clean %>%
+  mutate(region_name = case_when(
+    region == "Amhara" ~ "Amhara",
+    region == "Oromia" ~ "Oromia",
+    region == "Somali" ~ "Somali",
+    region == "SNNP" ~ "SNNP",
+    region == "Beneshangul Gumuz" ~ "B.Gumuz",
+    region == "Sidama" ~ "Sidama",
+    region == "Afar" ~ "Afar",
+    region == "South West Ethiopia Peoples" ~ "SWEP",
+    region == "Gambella" ~ "Gambella",
+    region == "Hareri" ~ "Hareri"
+  )) %>% # rename the region names
+  mutate(region_color = case_when(
+    region_name == "Amhara" ~ "#F90909",
+    region_name == "Oromia" ~ "#F19724",
+    region_name == "Somali" ~ "#7D6608",
+    region_name == "SNNP" ~ "#9A7D0A",
+    region_name == "B.Gumuz" ~ "#B7950B",
+    region_name == "Sidama" ~ "#D4AC0D",
+    region_name == "Afar" ~ "#F1C40F",
+    region_name == "SWEP" ~ "#F4D03F",
+    region_name == "Gambella" ~ "#F7DC6F",
+    region_name == "Hareri" ~ "#F9E79F"
+  ))
 ```
 
 ```{r}
-# set the color 
+# set the color
 region_color <- data.frame(
-  region = c("Amhara", "Oromia", "Somali", "SNNP", "Beneshangul Gumuz", "Sidama", "Afar", "South West Ethiopia Peoples", "Gambella", "Hareri"),
-  clr = c("#FA2E02", "#9A7D0A", "#9A7D0A", "#B7950B", "#D4AC0D", "#F1C40F", "#F4D03F", "#F7DC6F", "#F9E79F", "#FCF3CF")
+  region_name = c("Amhara", "Oromia", "Somali", "SNNP", "B.Gumuz", "Sidama", "Afar", "SWEP", "Gambella", "Hareri"),
+  clr = c("#F90909", "#9A7D0A", "#9A7D0A", "#B7950B", "#D4AC0D", "#F1C40F", "#F4D03F", "#F7DC6F", "#F9E79F", "#FCF3CF")
 )
 
-site_assessment_clean %>% 
-  select(region, contains(c("male", "female", "total", "reason","individual"))) %>% 
-  group_by(reason_for_displacement, region) %>% 
-  summarise(total_idps = n()) %>% 
-  filter(!is.na(reason_for_displacement), reason_for_displacement == "Conflict") %>% 
-  left_join(region_color, by = "region") %>% 
-  mutate(region = fct_reorder(region, total_idps)) %>% 
-  ggplot(aes(x = region, y = total_idps, fill = clr)) +
+# see the conflicts by region
+disp_conflict <- site_assessment_clean %>%
+  select(region_name, contains(c("male", "female", "total", "reason", "individual"))) %>%
+  group_by(reason_for_displacement, region_name) %>%
+  summarise(total_idps = n()) %>%
+  ungroup() %>%
+  filter(!is.na(reason_for_displacement), reason_for_displacement == "Conflict") %>%
+  select(-reason_for_displacement) %>%
+  left_join(region_color, by = "region_name") %>%
+  mutate(region_name = fct_reorder(region_name, total_idps))
+
+# plot number of idps opened due to conflict
+disp_conflict %>%
+  ggplot(aes(x = region_name, y = total_idps, fill = clr)) +
   geom_col() +
- # theme_minimal() +
+  geom_text(aes(label = total_idps), vjust = -0.5, color = "black", size = 8) + # Add text labels
+  theme_minimal() +
   scale_fill_identity() +
   coord_flip() +
-  labs(title = "Number of IDPs sites opened due to <span style = 'font-size:8pt'>conflict</span> by Region",
-       y = "# of IDP", 
-       x = "") +
-  theme(legend.position = 'none',
-        plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
-        axis.title.x = element_text(face = "bold"))
-  
+  labs(
+    title = "Number of IDPs sites opened due to <span style = 'color:#FA2E02 '>*conflict*</span> by Region",
+    y = "# of IDPs",
+    x = ""
+  ) +
+  theme(
+    legend.position = "none",
+    plot.title = element_textbox(face = "bold", size = 15, color = "black", box.color = "white", vjust = 1, hjust = 0.5),
+    axis.title.x = element_text(face = "bold", size = 12),
+    axis.text.y = element_text(face = "bold", size = 12),
+    axis.text.x = element_text(face = "bold", size = 12)
+  )
+```
+
+```{r}
+all_disp <- site_assessment_clean %>%
+   mutate(site_open_date = lubridate::year(site_open_date)) %>%
+  group_by(reason_for_displacement, region_name, site_open_date) %>%
+  summarise(total_idps = n()) %>%
+  ungroup() %>%
+  mutate(reason_for_displacement = case_when(
+    reason_for_displacement == "Conflict" ~ "Conflict",
+    reason_for_displacement %in% c("Drought", "Other climate induced") ~ "Climate",
+    reason_for_displacement %in% "Social tension" ~ "Social Tension"
+  )) %>%
+  drop_na() %>% view()
+```
+
+```{r}
+site_open_year <- site_assessment_clean %>%
+  select(site_name, region_name, site_open_date) %>%
+  filter(!is.na(site_name)) %>%
+  mutate(site_open_date = lubridate::year(site_open_date)) %>%
+  group_by(region_name, site_open_date) %>%
+  summarise(total_site_open = n()) %>%
+  ungroup()
+
+ site_open_year %>% 
+  filter(site_open_date > 2016, !(region_name %in% c("Gambella", "Hareri", "SWEP", "Sidama"))) %>%
+  mutate(site_open_date = factor(site_open_date)) %>%
+  left_join(region_color, by = "region_name") %>%
+  mutate(region_name = fct_reorder(region_name, total_site_open)) %>%
+  ggplot(aes(x = site_open_date, y = total_site_open, fill = region_name)) +
+  geom_col() +
+  facet_wrap(~region_name, scales = "free_x") +
+  coord_flip(clip = "off")
+```
+
+```{r}
+site_open_year_idps <- site_open_year %>% 
+   filter(site_open_date > 2016, !(region_name %in% c("Gambella", "Hareri", "SWEP", "Sidama"))) %>% 
+  inner_join(all_disp, by = "region_name",relationship = "many-to-many" ) %>% 
+  left_join(region_color, by = "region_name") %>% 
+  pivot_wider(names_from = site_open_date, values_from = total_site_open, names_prefix = "year_") %>% 
+  mutate(region_name = fct_reorder(region_name, total_idps)) %>% 
+  ungroup()
+
+```
+
+Circular bar plot 
+
+```{r}
+plt <- ggplot(site_open_year_idps) +
+  geom_hline(
+    aes(yintercept = y), 
+  data.frame(y = c(4,210, 1000)), color = "lightgrey")
 
 ```
 
 ```{r}
+plt1 <- plt + 
+  geom_col(
+    aes(
+      x = region_name,
+      y = year_2022),
+    position = "dodge2",
+    show.legend = TRUE,
+    alpha = 0.9
+  )
+```
 
-
+```{r}
+site_open_year_idps %>% 
+  ggplot(aes(x = region_name, y = total_idps)) +
+  geom_col()
 ```
 
